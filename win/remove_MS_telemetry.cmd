@@ -1,10 +1,11 @@
 @echo off
-title "Disable Windows 7/8/8.1 Telemetry"
+title "Disable Windows 7/8/8.1/10 Telemetry"
 endlocal & setlocal EnableDelayedExpansion
 
 rem Script created by <github.com/tarampampam> # 2015
+rem Script edited by <github.com/dvor85> # 2015
 rem Github: <https://gist.github.com/tarampampam/a0db45fb0de5976300b1>
-rem OS: Windows 7/8/8.1
+rem OS: Windows 7/8/8.1/10
 rem Version 0.2.11
 
 echo.
@@ -48,7 +49,7 @@ set BlockIPaddresses=1
 set BlockIPaddressesWithFirewall=1
 set AddDomainsToHosts=1
 set DisableAutomaticUpdates=1
-set CreateMSETask=1
+set RemoveMetroApps=1
 
 set FirewallIPlist=
 set UpdatesList=
@@ -57,7 +58,7 @@ set LogFilePath="%~f0.log"
 
 rem Parse passed arguments to script
 :parse_passed_params
-  if "%~1"=="" goto end_parse_passed_params
+  if "%~1"=="" goto:end_parse_passed_params
   if "%~1"=="-e"        set ExitOnComplete=1
   if "%~1"=="-exit"     set ExitOnComplete=1
   if "%~1"=="-kb"       set UninstallUpdates=0
@@ -78,19 +79,22 @@ rem Parse passed arguments to script
   if "%~1"=="-updates"  set DisableAutomaticUpdates=0
   if "%~1"=="-l"        set WriteLogFile=0
   if "%~1"=="-log"      set WriteLogFile=0
-  shift & goto parse_passed_params
+  shift & goto:parse_passed_params
 :end_parse_passed_params
 
 goto:checkPermissions
 :begin
+reg Query "HKLM\Hardware\Description\System\CentralProcessor\0" | find /i "x86" > NUL && set OS=32BIT || set OS=64BIT
+if "%OS%"=="64BIT" (
+  if "%PROCESSOR_ARCHITECTURE%"=="x86" (
+    call:log "Must be run under 64bit cmd.exe" "ERROR"
+    goto:end
+  )
+)
 
 if %UninstallUpdates%==1 (
   call:title "Uninstall evil M$ updates.."
   rem You can find KB description here: https://support.microsoft.com/en-us/kb/%KB_NUMBER%
-  rem 3035583 - Disable Windows 10
-  rem 2952664
-  rem 3021917
-  rem 2976978
   rem 3080149 - Update for customer experience and diagnostic telemetry // 8.1 / WS 2012 R2, 7 SP1 / WS 2008 R2 SP1
   rem 3075249 - Update that adds telemetry points to consent.exe in Windows 8.1 and Windows 7 // 8.1 / RT 8.1 / WS 2012 R2 / 7 SP1 / WS 2008 R2 SP1
   rem 2952664 - Compatibility update for upgrading Windows 7 // 7 SP1
@@ -112,10 +116,6 @@ if %UninstallUpdates%==1 (
   rem 3050267 - Windows Update Client for Windows 8.1: June 2015 more info // WS 2012 R2 / 8.1
   rem 3046480 - Update helps to determine whether to migrate the .NET Framework 1.1 when you upgrade Windows 8.1 or Windows 7 more info // 7 SP1 / 8.1
   for %%? in (
-    "3035583"
-    "2952664"
-    "3021917"
-    "2976978"
     "3080149"
     "3075249"
     "2952664"
@@ -180,6 +180,15 @@ if %DisableTasks%==1 (
     "\Microsoft\Windows\Media Center\ReindexSearchRoot"
     "\Microsoft\Windows\Media Center\SqlLiteRecoveryTask"
     "\Microsoft\Windows\Media Center\UpdateRecordPath"
+    "\Microsoft\Windows\AppID\SmartScreenSpecific"
+    "\Microsoft\Windows\Application Experience\StartupAppTask"
+    "\Microsoft\Windows\Customer Experience Improvement Program\BthSQM"
+    "\Microsoft\Windows\Customer Experience Improvement Program\HypervisorFlightingTask"
+    "\Microsoft\Windows\FileHistory\File History ^(maintenance mode^)"
+    "\Microsoft\Windows\NetTrace\GatherNetworkInfo"
+    "\Microsoft\Windows\Shell\FamilySafetyMonitor"
+    "\Microsoft\Windows\Shell\FamilySafetyRefresh"
+    "\Microsoft\Windows\WindowsUpdate\Automatic App Update"
   ) do call:disable_task %%?
 )
 
@@ -189,17 +198,14 @@ if %DisableServices%==1 (
     "Diagtrack"
     "dmwappushservice"
     "WerSvc"
+    "diagnosticshub.standardcollector.service"
+    "RemoteRegistry"
+    "WMPNetworkSvc"
+    "WSearch"    
   ) do call:disable_service %%?
   
-  set RegDataCollection="HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DataCollection"
-  reg query !RegDataCollection!>nul 2>&1 & if %errorLevel%==0 (
-    reg add !RegDataCollection! /v AllowTelemetry /t REG_DWORD /d 0 /f >nul
-  )
+  call:disable_telemetry
   
-  set RegWindowsReporting="HKEY_CURRENT_USER\Software\Microsoft\Windows\Windows Error Reporting"
-  reg query !RegWindowsReporting!>nul 2>&1 & if %errorLevel%==0 (
-    reg add !RegWindowsReporting! /v Disabled /t REG_DWORD /d 1 /f >nul
-  )
 )
 
 if %BlockIPaddresses%==1 (
@@ -417,14 +423,17 @@ if %AddDomainsToHosts%==1 (
 
 if %DisableAutomaticUpdates%==1 (
   call:title "Disable automatic windows update ^(make search, but you must manually select updates to install^)"
-  set RegeditRoot="HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update"
-  reg add !RegeditRoot! /v AUOptions /t REG_DWORD /d 2 /f>nul
-  reg add !RegeditRoot! /v IncludeRecommendedUpdates /t REG_DWORD /d 0 /f>nul
-)
-
-if %CreateMSETask%==1 (  
+  call:reg_add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update" AUOptions 2
+  call:reg_add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update" IncludeRecommendedUpdates 0
   call:create_mse_update_task
 )
+
+if %RemoveMetroApps%==1 (
+  call:title "Remove Metro Apps"
+  call:remove_metro_apps
+)
+
+
 
 goto:end
 
@@ -449,6 +458,15 @@ goto:end
     echo [i] %title%>>%LogFilePath% 2>&1
   ))
   exit /b
+  
+:reg_add
+  set root="%~1"
+  set param="%~2"
+  set val=%~3
+  reg query !root!>nul 2>&1 & if %errorLevel%==0 (
+    reg add !root! /v !param! /t REG_DWORD /d !val! /f>nul
+  )
+  exit /b
 
 :checkPermissions
   if exist %SystemRoot%\System32\fsutil.exe (
@@ -467,7 +485,9 @@ goto:end
 :download_file
   set url=%~1
   set dest=%~2
-  powershell -ExecutionPolicy RemoteSigned -NoLogo -Noninteractive -Command "try { Import-Module BitsTransfer; Start-BitsTransfer -Source %url% -Destination %dest%; exit 100; } catch { exit 0; }">nul
+  rem powershell -ExecutionPolicy RemoteSigned -NoLogo -Noninteractive -Command "try { Import-Module BitsTransfer; Start-BitsTransfer -Source %url% -Destination %dest%; exit 100; } catch { exit 0; }">nul
+  set ccmd="try { (New-Object System.Net.WebClient).DownloadFile( \"%url%\", \"%dest%\" ); exit 100; } catch { exit 0; }"
+  powershell -ExecutionPolicy RemoteSigned -NoLogo -Noninteractive -Command %ccmd%>nul  
   exit /b
 
 :install_pswu_module
@@ -509,14 +529,16 @@ goto:end
         if exist !pswu_temp! (
           call:log "Move module files to PowerShell modules directory.."
           if exist !pswu_distr_path! (rmdir !pswu_distr_path! /s /q>nul)
-          move /y "!pswu_temp!\PSWindowsUpdate" !ps_modules_dir!>nul
+          mkdir !pswu_distr_path!>nul
+          xcopy /Y /E /H /Q "!pswu_temp!\PSWindowsUpdate" !pswu_distr_path!>nul
+          REM move /y "!pswu_temp!\PSWindowsUpdate" !ps_modules_dir!>nul
           if "!local_unzip_tool!" NEQ "1"  (del /f !unzip_tool!>nul)
           if "!local_pswu_module!" NEQ "1" (del /f !pswu_zip!>nul)
           rmdir !pswu_temp! /s /q>nul
           if exist "!pswu_distr_path!\Hide-WUUpdate.ps1" (
             call:log "'PSWindowsUpdate' module for PowerShell installed" "Installation complete"
             set result=100
-            timeout /t 2 /nobreak>nul & tskill powershell>nul 2>&1 & timeout /t 2 /nobreak>nul
+            timeout /t 2 /nobreak>nul & taskkill /f /im powershell.exe>nul 2>&1 & timeout /t 2 /nobreak>nul
           ) else (
             call:log "Installation module 'PSWindowsUpdate' failed - files in !pswu_distr_path! not found" "Installation failed"
           )
@@ -589,10 +611,18 @@ goto:end
   exit /b
   
 :create_mse_update_task
-  set MSE=%ProgramFiles%\Microsoft Security Client\MpCmdRun.exe
-  if exist "%MSE%" (
-    call:log "Create Microsoft Esential Security update task"
-	schtasks /Create /SC DAILY  /MO 1 /ST 08:00 /RI 60 /DU 24:00 /RL HIGHEST /RU System /TN "MSE Update" /TR "\"%MSE%\" -SignatureUpdate -ScheduleJob -RestrictPrivileges">nul
+  set MSE=("%ProgramFiles%\Microsoft Security Client\MpCmdRun.exe","%ProgramFiles%\Windows Defender\MpCmdRun.exe")
+  for %%? in %MSE% do ( 
+    if exist %%? (
+      call:log "Create Microsoft Esential Security update task"
+	  schtasks /Create /F /SC DAILY /MO 1 /ST 08:00 /RI 60 /DU 24:00 /RL HIGHEST /RU System /TN "MSE Update" /TR "'%%~?' -SignatureUpdate -ScheduleJob -RestrictPrivileges">nul
+      if %errorlevel% EQU 0 (
+        call:log "Create MSE Update task SUCCESS"
+      ) else (
+        call:log "Cannot create MSE update task" "Error"
+      )
+      exit /b
+    )
   )
   exit /b
 
@@ -645,9 +675,46 @@ goto:end
     )
   )
   exit /b
-
+  
+:disable_telemetry
+  REM --- Отключение телеметрии и сбора данных --- 
+  call:reg_add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DataCollection" AllowTelemetry 0
+  call:reg_add "HKEY_CURRENT_USER\Software\Microsoft\Windows\Windows Error Reporting" Disabled 1
+  call:reg_add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Device Metadata" PreventDeviceMetadataFromNetwork 1
+  call:reg_add "HKLM\SOFTWARE\Policies\Microsoft\MRT" DontOfferThroughWUAU 1
+  call:reg_add "HKLM\SOFTWARE\Policies\Microsoft\SQMClient\Windows" CEIPEnable 0
+  call:reg_add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppCompat" AITEnable 0
+  call:reg_add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppCompat" DisableUAR 1
+  call:reg_add "HKLM\SYSTEM\CurrentControlSet\Control\WMI\AutoLogger\AutoLogger-Diagtrack-Listener" Start 0
+  call:reg_add "HKLM\SYSTEM\CurrentControlSet\Control\WMI\AutoLogger\SQMLogger" Start 0
+  call:reg_add "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Siuf\Rules" NumberOfSIUFInPeriod 0
+  call:reg_add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" AllowCortana 0
+  
+  del /f %ProgramData%\Microsoft\Diagnosis\ETLLogs\AutoLogger\AutoLogger-Diagtrack-Listener.etl>nul 2>&1
+  reg delete "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Siuf\Rules" /v PeriodInNanoSeconds /f>nul 2>&1
+  reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FolderDescriptions\{12D4C69E-24AD-4923-BE19-31321C43A767}" /f>nul 2>&1
+  call:disable_onedrive
+  
+  
+  exit /b  
+  
+:disable_onedrive
+  REM --- Полное отключение OneDrive --- 
+  TASKKILL /F /IM OneDrive.exe /T>nul 2>&1
+  call:reg_add "HKLM\SOFTWARE\Policies\Microsoft\Windows\OneDrive" DisableFileSyncNGSC 1
+  call:reg_add "HKCR\CLSID\{018D5C66-4533-4307-9B53-224DE2ED1FE6}" System.IsPinnedToNameSpaceTree 0
+  reg delete "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "OneDrive" /f>nul 2>&1
+  
+  exit /b
+  
+:remove_metro_apps
+  powershell -ExecutionPolicy RemoteSigned -NoLogo -Noninteractive -Command "try { Get-AppxProvisionedPackage -online | Remove-AppxProvisionedPackage -online; Get-AppXPackage -AllUsers | Remove-AppxPackage; exit 100; } catch { exit 0 }">nul 2>&1
+ 
+  exit /b
+  
+  
 :end
   call:title "Exit after 60 seconds, or press any key for exit now"
-  timeout /t 60>nul 2>&1
+  timeout /t 60>nul 2>&1  
   endlocal & if %ExitOnComplete%==1 (exit)
   echo on

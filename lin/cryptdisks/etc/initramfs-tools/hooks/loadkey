@@ -1,0 +1,27 @@
+#!/bin/sh
+
+PREREQ=""
+
+prereqs()
+{
+        echo "$PREREQ"
+}
+
+case $1 in
+prereqs)
+        prereqs
+        exit 0
+        ;;
+esac
+
+if [ ! -x /sbin/cryptsetup ]; then
+        exit 0
+fi
+
+. /usr/share/initramfs-tools/hook-functions
+
+cat > ${DESTDIR}/sbin/loadkey <<END
+#!/bin/sh
+cat "$KEYFILE"
+END
+chmod +x ${DESTDIR}/sbin/loadkey

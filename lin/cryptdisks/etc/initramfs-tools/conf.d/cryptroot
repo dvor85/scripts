@@ -1,0 +1,2 @@
+source=UUID=cfbb10f2-beb8-40b6-b337-ceeda065b97b,target=drivespace,keyscript=/sbin/loadkey
+source=UUID=9b9b0c1d-751c-478c-8492-2a51452ad154,target=diskroot,lvm=vgroot-rootfs,keyscript=/sbin/loadkey

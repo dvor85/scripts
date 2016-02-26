@@ -1,0 +1,2 @@
+# <target name>	<source device>		<key file>	<options>
+diskroot 	/dev/disk/by-uuid/9b9b0c1d-751c-478c-8492-2a51452ad154 /root/mykey	luks

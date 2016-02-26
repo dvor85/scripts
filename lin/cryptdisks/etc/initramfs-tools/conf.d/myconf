@@ -1,0 +1,3 @@
+export MYKEY="mykey"
+export KEYFILE="/root/$MYKEY"
+export USERSERV="user@server"

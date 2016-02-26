@@ -1,0 +1,44 @@
+#!/bin/sh
+
+PREREQ=""
+
+prereqs() {
+	echo "$PREREQ"
+}
+
+case "$1" in
+	prereqs)
+		prereqs
+		exit 0
+	;;
+esac
+
+. "${CONFDIR}/initramfs.conf"
+. /usr/share/initramfs-tools/hook-functions
+
+copy_exec /usr/bin/ssh /sbin
+LIBC_DIR=`ldd /usr/bin/ssh | sed -n -e 's,.* => \(/lib.*\)/libc\.so\..*,\1,p'`
+for so in $(find "${LIBC_DIR}" -name 'libnss_compat*' -or -name 'libnss_files*' -or -name 'libnss_dns*'); do
+    copy_exec "${so}"
+done
+mkdir -p "${DESTDIR}/etc"
+echo 'passwd: compat' > "${DESTDIR}/etc/nsswitch.conf"
+echo "root:x:0:0:root:/root:/bin/sh" > "${DESTDIR}/etc/passwd"
+
+id_rsa="/etc/initramfs-tools/root/.ssh/id_rsa"
+if [ ! -f $id_rsa ]; then
+    mkdir -p "$(dirname $id_rsa)"
+    ssh-keygen -q -t rsa -N "" -C unlock_$(hostname) -f $id_rsa
+    ssh_user=`echo $USERSERV | sed -r 's/([^@]+)(.*)/\1/'`
+    ssh_serv=`echo $USERSERV | sed -r 's/[^@]+@(.*)/\1/'`
+    echo "Try to add ${id_rsa}.pub to authorized_keys at the $USERSERV"
+    cat "${id_rsa}.pub" | ssh -o ConnectTimeout=10 root@$ssh_serv "mkdir -p ~$ssh_user/.ssh/; cat - >> ~$ssh_user/.ssh/authorized_keys; chown -R $ssh_user ~$ssh_user/.ssh/; chmod 600 ~$ssh_user/.ssh/authorized_keys"
+    [ ! $? -eq 0 ] && echo "FAILED!" 
+    echo "Try to add $KEYFILE to $USERSERV"
+    cat $KEYFILE | ssh -o ConnectTimeout=10 -i $id_rsa $USERSERV "cat - > ~/$MYKEY; chmod 400 ~/$MYKEY"
+    [ ! $? -eq 0 ] && echo "FAILED!"
+fi
+mkdir -p "${DESTDIR}/root/.ssh/"
+cp -r /etc/initramfs-tools/root "${DESTDIR}"
+
+

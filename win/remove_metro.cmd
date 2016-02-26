@@ -1,0 +1,2 @@
+@echo off
+powershell -ExecutionPolicy RemoteSigned -NoLogo -Noninteractive -Command "& { Get-AppxProvisionedPackage -online | Remove-AppxProvisionedPackage -online; Get-AppXPackage -AllUsers | Remove-AppxPackage; Get-AppXPackage | Remove-AppxPackage; }"

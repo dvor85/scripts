@@ -1,0 +1,65 @@
+#!/bin/sh
+
+PREREQ="udev"
+EXCEPT_DEVLIST=$(/sbin/blkid -o device -t TYPE=crypto_LUKS)
+
+prereqs()
+{
+    echo "$PREREQ"
+}
+
+case $1 in
+    # get pre-requisites
+    prereqs)
+	prereqs
+	exit 0
+	;;
+esac
+
+. /scripts/functions
+
+get_key()
+{
+    mpoint="/flash"
+    mkdir -p $mpoint
+
+    wait_for_udev 10
+    for dev in $(/sbin/blkid -o device); do
+        if [ -z "$(echo -e "$EXCEPT_DEVLIST" | sed -n "\#^$dev\$#p")" ]; then
+            EXCEPT_DEVLIST="$EXCEPT_DEVLIST\n$dev"
+
+            FSTYPE=$(/sbin/blkid -o value -s TYPE $dev);
+            if mount -o ro -t $FSTYPE $dev $mpoint >/dev/null 2>&1; then
+                if [ -s "$mpoint/$MYKEY" ]; then
+                    cat "$mpoint/$MYKEY" > "$KEYFILE"
+                fi
+                umount $dev >/dev/null 2>&1
+            fi;
+        fi;
+        if [ -s "$KEYFILE" ]; then
+            return 0
+        fi;
+    done;
+
+    configure_networking
+    wait_for_udev 10
+    if [ ! -s "$KEYFILE" ]; then
+        /sbin/ssh -q -o StrictHostKeyChecking=no -o ConnectTimeout=10 $USERSERV "cat ~/$MYKEY" > "$KEYFILE"
+    fi
+    if [ -s "$KEYFILE" ]; then
+	return 0
+    fi;
+
+    return 1;
+}
+
+main()
+{
+    while ! get_key; do
+	sleep 10;
+    done;
+}
+
+main
+
+

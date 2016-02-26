@@ -1,0 +1,32 @@
+#!/bin/sh
+
+PREREQ="udev"
+
+prereqs()
+{
+        echo "$PREREQ"
+}
+
+case $1 in
+prereqs)
+        prereqs
+        exit 0
+        ;;
+esac
+
+
+. /scripts/functions
+
+if [ -z $IP ]; then
+cat >/run/net-$DEV.conf << EOF
+/bin/busybox ip addr add $ADDR dev $DEV
+/bin/busybox ip link set $DEV up
+/bin/busybox ip route add default via $GW
+export DEVICE=$DEV
+EOF
+fi
+
+for ns in $DNS; do
+    echo "nameserver $ns" >> /etc/resolv.conf
+done;
+
