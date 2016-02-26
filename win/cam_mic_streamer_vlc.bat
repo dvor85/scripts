@@ -23,7 +23,7 @@ set EDIT=0
 
 rem ******************************************************
 
-reg Query "HKLM\Hardware\Description\System\CentralProcessor\0" | find /i "x32" >nul 2>&1 && set OS=32 || set OS=64
+reg Query "HKLM\Hardware\Description\System\CentralProcessor\0" | find /i "x86" >nul 2>&1 && set OS=32 || set OS=64
 
 for /f "tokens=3*" %%a in ('REG QUERY "HKLM\Software\VideoLAN\VLC" /ve') do set VLC="%%~b"
 set NSSM="%systemroot%\nssm\win%OS%\nssm.exe"

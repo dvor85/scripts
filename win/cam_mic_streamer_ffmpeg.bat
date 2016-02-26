@@ -10,7 +10,7 @@ set URL=udp://239.192.0.220:1234?pkt_size=1316
 
 rem ******************************************************
 
-reg Query "HKLM\Hardware\Description\System\CentralProcessor\0" | find /i "x32" >nul 2>&1 && set OS=32 || set OS=64
+reg Query "HKLM\Hardware\Description\System\CentralProcessor\0" | find /i "x86" >nul 2>&1 && set OS=32 || set OS=64
 set SNAME=cms
 set NSSM="%systemroot%\ffmpeg_nssm\win%OS%\nssm.exe"
 set FFMPEG="%systemroot%\ffmpeg_nssm\win%OS%\ffmpeg.exe"
