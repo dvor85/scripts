@@ -1,0 +1,1 @@
+reg add HKCR\.js /ve /t REG_SZ /d "txtfile" /f
