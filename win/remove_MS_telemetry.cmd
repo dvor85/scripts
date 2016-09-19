@@ -3,10 +3,10 @@ title "Disable Windows 7/8/8.1/10 Telemetry"
 endlocal & setlocal EnableDelayedExpansion
 
 rem Script created by <github.com/tarampampam> # 2015
-rem Script edited by <github.com/dvor85> # 2015
+rem Script edited by <github.com/dvor85> # 2016
 rem Github: <https://gist.github.com/tarampampam/a0db45fb0de5976300b1>
 rem OS: Windows 7/8/8.1/10
-rem Version 0.2.11
+rem based on Version 0.2.14
 
 echo.
 echo   ***************************************************************************
@@ -115,8 +115,15 @@ if %UninstallUpdates%==1 (
   rem 3050265 - Windows Update Client for Windows 7: June 2015 more info // WS 2008 R2 / 7
   rem 3050267 - Windows Update Client for Windows 8.1: June 2015 more info // WS 2012 R2 / 8.1
   rem 3046480 - Update helps to determine whether to migrate the .NET Framework 1.1 when you upgrade Windows 8.1 or Windows 7 more info // 7 SP1 / 8.1
+  rem 2882822 - Update adds ITraceRelogger interface support // 7 SP1 / WS 2008 R2
+  rem 3083710 - Windows Update Client for Windows 7 and Windows Server 2008 R2: October 2015 // 7 SP1 / WS 2008 R2
+  rem 3083711 - Windows Update Client for Windows 8.1 and Windows Server 2012 R2: October 2015 // 8.1 / WS 2012 R2
+  rem 3112343 - Windows Update Client for Windows 7 and Windows Server 2008 R2: December 2015 // 7 / WS 2008 R2
+  rem 3112336 - Windows Update Client for Windows 8.1 and Windows Server 2012 R2: December 2015 // 8.1 / WS 2012 R2
+  rem 3112336 - Updated capabilities to upgrade Windows 8.1 and Windows 7 // 8.1 / 7 SP1
+  rem 3112336 - Windows Update Client for Windows 7 and Windows Server 2008 R2: February 2016 // 7 SP1 / WS 2008 R2 / Embedded Standard 7 SP1
   for %%? in (
-    "3080149"
+    "3080149"   
     "3075249"
     "2952664"
     "3035583"
@@ -136,6 +143,13 @@ if %UninstallUpdates%==1 (
     "3050265"
     "3050267"
     "3046480"
+    "2882822"
+    "3083710"
+    "3083711"
+    "3112343"
+    "3112336"
+    "3135445"
+    "3123862"
   ) do call:uninstall_update %%?
 )
 
@@ -306,8 +320,6 @@ if %AddDomainsToHosts%==1 (
     "a.ads2.msads.net"
     "live.rads.msn.com"
     "ads2.msn.com.c.footprint.net"
-    "apps.skype.com"
-    "ui.skype.com"
     "aka-cdn-ns.adtech.de"
     "az361816.vo.msecnd.net"
     "az512334.vo.msecnd.net"
@@ -322,8 +334,6 @@ if %AddDomainsToHosts%==1 (
     "c.atdmt.com"
     "db3aqu.atdmt.com"
     "cdn.atdmt.com"
-    "msftncsi.com"
-    "www.msftncsi.com"
     "choice.live.com"
     "choice.microsoft.com"
     "choice.microsoft.com.nsatc.net"
@@ -358,7 +368,6 @@ if %AddDomainsToHosts%==1 (
     "ac3.msn.com"
     "a.rad.msn.com"
     "cds26.ams9.msecn.net"
-    "m.hotmail.com"
     "secure.flashtalking.com"
     "static.2mdn.net"
     "s0.2mdn.net"
@@ -388,7 +397,6 @@ if %AddDomainsToHosts%==1 (
     "sqm.telemetry.microsoft.com.nsatc.net"
     "ssw.live.com"
     "ssw.live.com.nsatc.net"
-    "s.gateway.messenger.live.com"
     "statsfe1.ws.microsoft.com"
     "statsfe1.ws.microsoft.com.nsatc.net"
     "statsfe2.update.microsoft.com.akadns.net"
@@ -509,7 +517,7 @@ goto:end
       set unzip_tool="%temp%\unzip.exe"
       call:log "Download unzip tool.."
       rem Original source: http://stahlworks.com/dev/unzip.exe
-      call:download_file "https://www.dropbox.com/s/gxf8d4bg0yyozdh/unzip.exe?dl=1" !unzip_tool!
+      call:download_file "https://github.com/dvor85/scripts/raw/master/win/unzip.exe" !unzip_tool!
     )
     if exist !unzip_tool! (
       if exist "%~dp0\PSWindowsUpdate.zip" (
@@ -520,7 +528,7 @@ goto:end
         set pswu_zip="%temp%\PSWindowsUpdate.zip"
         call:log "Download PowerShell module 'PSWindowsUpdate'.."
         rem Original source: https://gallery.technet.microsoft.com/scriptcenter/2d191bcd-3308-4edd-9de2-88dff796b0bc/
-        call:download_file "https://www.dropbox.com/s/z61nlkfecmhabil/PSWindowsUpdate.zip?dl=1" !pswu_zip!
+        call:download_file "https://github.com/dvor85/scripts/raw/master/win/PSWindowsUpdate.zip" !pswu_zip!
       )
       if exist !pswu_zip! (
         set pswu_temp="%temp%\pswindowsupdate_content"
