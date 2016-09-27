@@ -92,74 +92,6 @@ if "%OS%"=="64BIT" (
   )
 )
 
-if %UninstallUpdates%==1 (
-  call:title "Uninstall evil M$ updates.."
-  rem You can find KB description here: https://support.microsoft.com/en-us/kb/%KB_NUMBER%
-  rem 3080149 - Update for customer experience and diagnostic telemetry // 8.1 / WS 2012 R2, 7 SP1 / WS 2008 R2 SP1
-  rem 3075249 - Update that adds telemetry points to consent.exe in Windows 8.1 and Windows 7 // 8.1 / RT 8.1 / WS 2012 R2 / 7 SP1 / WS 2008 R2 SP1
-  rem 2952664 - Compatibility update for upgrading Windows 7 // 7 SP1
-  rem 3035583 - Update installs Get Windows 10 app in Windows 8.1 and Windows 7 SP1 // 8.1 / 7 SP1 / IE11
-  rem 3068708 - Update for customer experience and diagnostic telemetry // 8.1 / WS 2012 R2 / 7 SP1 / WS 2008 R2 SP1
-  rem 3022345 - Update for customer experience and diagnostic telemetry // WS 2012 R2 / 8.1 / WS 2008 R2 SP1 / 7 SP1
-  rem 3021917 - Update to Windows 7 SP1 for performance improvements // 7 SP1
-  rem 2976978 - Compatibility update for Windows 8.1 and Windows 8 // 8 / 8.1
-  rem 3044374 - Update that enables you to upgrade from Windows 8.1 to Windows 10 // WS 2012 R2 / 8.1
-  rem 2990214 - Update that enables you to upgrade from Windows 7 to a later version of Windows // WS 2008 R2 SP1 / 7 SP1
-  rem 971033 - Update for Windows Activation Technologies // 7
-  rem 3075851 - Windows Update Client for Windows 7 and Windows Server 2008 R2: August 2015 // WS 2008 R2 SP1 / 7 SP1 / Embedded Standard 7 SP1
-  rem 3065988 - Windows Update Client for Windows 8.1 and Windows Server 2012 R2: July 2015 more info // WS 2012 R2 / 8.1
-  rem 3083325 - Windows Update Client for Windows 8.1 and Windows Server 2012 R2: September 2015 more info // WS 2012 R2 / 8.1
-  rem 3083324 - Windows Update Client for Windows 7 and Windows Server 2008 R2: September 2015 more info // WS 2008 R2 / 7
-  rem 3075853 - Windows Update Client for Windows 8.1 and Windows Server 2012 R2: August 2015 more info // WS 2012 R2 / 8.1
-  rem 3065987 - Windows Update Client for Windows 7 and Windows Server 2008 R2: July 2015 more info // WS 2008 R2 / 7
-  rem 3050265 - Windows Update Client for Windows 7: June 2015 more info // WS 2008 R2 / 7
-  rem 3050267 - Windows Update Client for Windows 8.1: June 2015 more info // WS 2012 R2 / 8.1
-  rem 3046480 - Update helps to determine whether to migrate the .NET Framework 1.1 when you upgrade Windows 8.1 or Windows 7 more info // 7 SP1 / 8.1
-  rem 2882822 - Update adds ITraceRelogger interface support // 7 SP1 / WS 2008 R2
-  rem 3083710 - Windows Update Client for Windows 7 and Windows Server 2008 R2: October 2015 // 7 SP1 / WS 2008 R2
-  rem 3083711 - Windows Update Client for Windows 8.1 and Windows Server 2012 R2: October 2015 // 8.1 / WS 2012 R2
-  rem 3112343 - Windows Update Client for Windows 7 and Windows Server 2008 R2: December 2015 // 7 / WS 2008 R2
-  rem 3112336 - Windows Update Client for Windows 8.1 and Windows Server 2012 R2: December 2015 // 8.1 / WS 2012 R2
-  rem 3112336 - Updated capabilities to upgrade Windows 8.1 and Windows 7 // 8.1 / 7 SP1
-  rem 3112336 - Windows Update Client for Windows 7 and Windows Server 2008 R2: February 2016 // 7 SP1 / WS 2008 R2 / Embedded Standard 7 SP1
-  for %%? in (
-    "3080149"   
-    "3075249"
-    "2952664"
-    "3035583"
-    "3068708"
-    "3022345"
-    "3021917"
-    "2976978"
-    "3044374"
-    "2990214"
-    "971033"
-    "3075851"
-    "3065988"
-    "3083325"
-    "3083324"
-    "3075853"
-    "3065987"
-    "3050265"
-    "3050267"
-    "3046480"
-    "2882822"
-    "3083710"
-    "3083711"
-    "3112343"
-    "3112336"
-    "3135445"
-    "3123862"
-  ) do call:uninstall_update %%?
-)
-
-if %DisableUpdates%==1 (
-  call:title "Disable ^(hide^) uninstalled updates.."
-  call:log "It can take a lot of time - wait please, or use -d flag for disable this feature.." "Notice"
-  rem For using this shit you must init updates list by calling 'call:uninstall_update "123123"' first!
-  call:disable_updates
-)
-
 if %DisableTasks%==1 (
   call:title "Disable some windows tasks.."
   for %%? in (
@@ -215,7 +147,8 @@ if %DisableServices%==1 (
     "diagnosticshub.standardcollector.service"
     "RemoteRegistry"
     "WMPNetworkSvc"
-    "WSearch"    
+    "WSearch"
+    "wuauserv"
   ) do call:disable_service %%?
   
   call:disable_telemetry
@@ -441,7 +374,73 @@ if %RemoveMetroApps%==1 (
   call:remove_metro_apps
 )
 
+if %UninstallUpdates%==1 (
+  call:title "Uninstall evil M$ updates.."
+  rem You can find KB description here: https://support.microsoft.com/en-us/kb/%KB_NUMBER%
+  rem 3080149 - Update for customer experience and diagnostic telemetry // 8.1 / WS 2012 R2, 7 SP1 / WS 2008 R2 SP1
+  rem 3075249 - Update that adds telemetry points to consent.exe in Windows 8.1 and Windows 7 // 8.1 / RT 8.1 / WS 2012 R2 / 7 SP1 / WS 2008 R2 SP1
+  rem 2952664 - Compatibility update for upgrading Windows 7 // 7 SP1
+  rem 3035583 - Update installs Get Windows 10 app in Windows 8.1 and Windows 7 SP1 // 8.1 / 7 SP1 / IE11
+  rem 3068708 - Update for customer experience and diagnostic telemetry // 8.1 / WS 2012 R2 / 7 SP1 / WS 2008 R2 SP1
+  rem 3022345 - Update for customer experience and diagnostic telemetry // WS 2012 R2 / 8.1 / WS 2008 R2 SP1 / 7 SP1
+  rem 3021917 - Update to Windows 7 SP1 for performance improvements // 7 SP1
+  rem 2976978 - Compatibility update for Windows 8.1 and Windows 8 // 8 / 8.1
+  rem 3044374 - Update that enables you to upgrade from Windows 8.1 to Windows 10 // WS 2012 R2 / 8.1
+  rem 2990214 - Update that enables you to upgrade from Windows 7 to a later version of Windows // WS 2008 R2 SP1 / 7 SP1
+  rem 971033 - Update for Windows Activation Technologies // 7
+  rem 3075851 - Windows Update Client for Windows 7 and Windows Server 2008 R2: August 2015 // WS 2008 R2 SP1 / 7 SP1 / Embedded Standard 7 SP1
+  rem 3065988 - Windows Update Client for Windows 8.1 and Windows Server 2012 R2: July 2015 more info // WS 2012 R2 / 8.1
+  rem 3083325 - Windows Update Client for Windows 8.1 and Windows Server 2012 R2: September 2015 more info // WS 2012 R2 / 8.1
+  rem 3083324 - Windows Update Client for Windows 7 and Windows Server 2008 R2: September 2015 more info // WS 2008 R2 / 7
+  rem 3075853 - Windows Update Client for Windows 8.1 and Windows Server 2012 R2: August 2015 more info // WS 2012 R2 / 8.1
+  rem 3065987 - Windows Update Client for Windows 7 and Windows Server 2008 R2: July 2015 more info // WS 2008 R2 / 7
+  rem 3050265 - Windows Update Client for Windows 7: June 2015 more info // WS 2008 R2 / 7
+  rem 3050267 - Windows Update Client for Windows 8.1: June 2015 more info // WS 2012 R2 / 8.1
+  rem 3046480 - Update helps to determine whether to migrate the .NET Framework 1.1 when you upgrade Windows 8.1 or Windows 7 more info // 7 SP1 / 8.1
+  rem 2882822 - Update adds ITraceRelogger interface support // 7 SP1 / WS 2008 R2
+  rem 3083710 - Windows Update Client for Windows 7 and Windows Server 2008 R2: October 2015 // 7 SP1 / WS 2008 R2
+  rem 3083711 - Windows Update Client for Windows 8.1 and Windows Server 2012 R2: October 2015 // 8.1 / WS 2012 R2
+  rem 3112343 - Windows Update Client for Windows 7 and Windows Server 2008 R2: December 2015 // 7 / WS 2008 R2
+  rem 3112336 - Windows Update Client for Windows 8.1 and Windows Server 2012 R2: December 2015 // 8.1 / WS 2012 R2
+  rem 3112336 - Updated capabilities to upgrade Windows 8.1 and Windows 7 // 8.1 / 7 SP1
+  rem 3112336 - Windows Update Client for Windows 7 and Windows Server 2008 R2: February 2016 // 7 SP1 / WS 2008 R2 / Embedded Standard 7 SP1
+  for %%? in (
+    "3080149"   
+    "3075249"
+    "2952664"
+    "3035583"
+    "3068708"
+    "3022345"
+    "3021917"
+    "2976978"
+    "3044374"
+    "2990214"
+    "971033"
+    "3075851"
+    "3065988"
+    "3083325"
+    "3083324"
+    "3075853"
+    "3065987"
+    "3050265"
+    "3050267"
+    "3046480"
+    "2882822"
+    "3083710"
+    "3083711"
+    "3112343"
+    "3112336"
+    "3135445"
+    "3123862"
+  ) do call:uninstall_update %%?
+)
 
+if %DisableUpdates%==1 (
+  call:title "Disable ^(hide^) uninstalled updates.."
+  call:log "It can take a lot of time - wait please, or use -d flag for disable this feature.." "Notice"
+  rem For using this shit you must init updates list by calling 'call:uninstall_update "123123"' first!
+  call:disable_updates
+)
 
 goto:end
 
