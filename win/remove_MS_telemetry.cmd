@@ -28,7 +28,7 @@ echo   *   -u ^| -updates   Do NOT change windows update settings               
 echo   *   -l ^| -log       Do NOT write messages to .log file                    *
 echo   *   -e ^| -exit      Exit when work is complete                            *
 echo   *                                                                         *
-echo   * Latest version you can find here: ^<http://goo.gl/1MzPtW^>                *
+echo   * Latest version you can find here: ^<https://blog.kplus.pro/adm/windows-7-8-disable-telemetry.html^>                *
 echo   *                                                                         *
 echo   ***************************************************************************
 echo   *                                                                         *
@@ -221,6 +221,7 @@ if %BlockIPaddressesWithFirewall%==1 (
 )
 
 if %AddDomainsToHosts%==1 (
+  call:del_blocked_hosts
   call:title "Find and add M$ domains to HOSTS file ^(block^).."
   for %%? in (
     "--title--"
@@ -654,6 +655,16 @@ goto:end
     )
   ) else set /a errors_counter=errors_counter+1 & call:log "Service '!service_name!' not installed"
   exit /b
+  
+
+:del_blocked_hosts
+  call:log "Delete blocked hosts, if exists"
+  set HOSTS=%SystemRoot%\system32\drivers\etc\hosts
+  set block_title=## Block MS telemetry domain names
+  
+  powershell -ExecutionPolicy RemoteSigned -NoLogo -Noninteractive -Command "try { $MassFile = Get-Content '!HOSTS!'; $LineStart = ($MassFile | Select-String '!block_title!').LineNumber; if ($LineStart) {$MassFile = $MassFile[0..($LineStart - 2)]; $MassFile | Out-File -Encoding 'Default' '!HOSTS!' -Force }} catch { exit 0 }">nul 2>&1
+  exit /b  
+
 
 :add_to_hosts
   set HOSTS=%SystemRoot%\system32\drivers\etc\hosts
@@ -682,6 +693,7 @@ goto:end
     )
   )
   exit /b
+  
   
 :disable_telemetry
   REM --- Отключение телеметрии и сбора данных --- 
@@ -722,6 +734,6 @@ goto:end
   
 :end
   call:title "Exit after 60 seconds, or press any key for exit now"
-  timeout /t 60>nul 2>&1  
+  REM timeout /t 60>nul 2>&1  
   endlocal & if %ExitOnComplete%==1 (exit)
   echo on
