@@ -135,6 +135,7 @@ if %DisableTasks%==1 (
     "\Microsoft\Windows\Shell\FamilySafetyMonitor"
     "\Microsoft\Windows\Shell\FamilySafetyRefresh"
     "\Microsoft\Windows\WindowsUpdate\Automatic App Update"
+    "\Microsoft\Windows\WindowsUpdate\Scheduled Start"
   ) do call:disable_task %%?
 )
 
