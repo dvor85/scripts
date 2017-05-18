@@ -714,9 +714,16 @@ goto:end
   reg delete "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Siuf\Rules" /v PeriodInNanoSeconds /f>nul 2>&1
   reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FolderDescriptions\{12D4C69E-24AD-4923-BE19-31321C43A767}" /f>nul 2>&1
   call:disable_onedrive
+  rem all:disable_smbv1
   
   
-  exit /b  
+  exit /b 
+
+:disable_smbv1
+  call:reg_add "HKLM\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters" SMB1 0
+  call:reg_add "HKLM\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters" SMB2 1
+  sc.exe config lanmanworkstation depend= bowser/mrxsmb20/nsi
+  sc.exe config mrxsmb10 start= disabled
   
 :disable_onedrive
   REM --- Полное отключение OneDrive --- 

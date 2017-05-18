@@ -1,6 +1,6 @@
 @echo off
 
-reg Query "HKLM\Hardware\Description\System\CentralProcessor\0" | find /i "x86" > NUL && set OS=32BIT || set OS=64BIT
+reg Query "HKLM\Hardware\Description\System\CentralProcessor\0" | find /i "x86" > NUL && set OS=32BIT|| set OS=64BIT
 
 set REG_PATH=HKLM\SOFTWARE\Google\Chrome\Extensions\cfhdojbkjhnklbpkdaibdccddilifddb
 if "%OS%"=="64BIT" set REG_PATH=HKLM\SOFTWARE\Wow6432Node\Google\Chrome\Extensions\cfhdojbkjhnklbpkdaibdccddilifddb
