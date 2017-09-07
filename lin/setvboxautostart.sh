@@ -26,7 +26,7 @@ fi
 
 mkdir -p `dirname  $VBOXAUTOSTART_CONFIG`
 chmod 1770 `dirname $VBOXAUTOSTART_CONFIG`
-chgrp vboxusers `dirname $VBOXAUTOSTART_CONFIG`
+chown $VBOXWEB_USER:vboxusers `dirname $VBOXAUTOSTART_CONFIG`
 
 if [[ ! -f $VBOXAUTOSTART_CONFIG ]]; then
     echo "default_policy=allow" > $VBOXAUTOSTART_CONFIG
