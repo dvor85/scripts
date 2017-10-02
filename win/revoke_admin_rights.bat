@@ -1,6 +1,8 @@
 @echo off
 set user=%~1
 if "%user%"=="" exit 1
+
+wmic useraccount where name='%u%' rename newname
 rem delete user from admins
 net localgroup Пользователи %user% /add
 net localgroup Администраторы %user% /delete
