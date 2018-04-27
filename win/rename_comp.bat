@@ -1,2 +1,4 @@
-set new_comp=new_comp
+@echo off
+set new_comp=%~1
+if "%new_comp%"=="" exit 1
 WMIC computersystem where caption="%computername%" rename "%new_comp%"
