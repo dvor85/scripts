@@ -1,10 +1,11 @@
 #!/bin/bash
 
-if [[ -z $1 ]]; then
-    echo "Usage $(basename $0) <mashinename>";
+if [[ -z $2 ]]; then
+    echo "Usage $(basename $0) <mashinename> <on|off>";
     exit 0;
 else
     MACHINENAME=$1
+    ACTION=$2
 fi
 
 [[ -f /etc/default/virtualbox ]] && . /etc/default/virtualbox
@@ -33,7 +34,7 @@ if [[ ! -f $VBOXAUTOSTART_CONFIG ]]; then
 fi
 
 sudo -u $VBOXWEB_USER VBoxManage setproperty autostartdbpath $VBOXAUTOSTART_DB
-sudo -u $VBOXWEB_USER VBoxManage modifyvm $MACHINENAME --autostart-enabled on
+sudo -u $VBOXWEB_USER VBoxManage modifyvm $MACHINENAME --autostart-enabled $ACTION
 sudo -u $VBOXWEB_USER VBoxManage modifyvm $MACHINENAME --autostop-type savestate
 
 sudo -u $VBOXWEB_USER touch $VBOXAUTOSTART_DB/$VBOXWEB_USER.start
