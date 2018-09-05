@@ -18,11 +18,10 @@ esac
 . /scripts/functions
 
 if [ -z $IP ]; then
-cat >/run/net-$DEV.conf << EOF
-/bin/busybox ip addr add $ADDR dev $DEV
-/bin/busybox ip link set $DEV up
+cat >/run/net-$DEVICE.conf << EOF
+/bin/busybox ip addr add $ADDR dev $DEVICE
+/bin/busybox ip link set $DEVICE up
 /bin/busybox ip route add default via $GW
-export DEVICE=$DEV
 EOF
 fi
 

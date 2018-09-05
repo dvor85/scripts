@@ -1,8 +1,9 @@
-export DEV=
+export DEVICE=
 export ADDR=
 export NETMASK=
 export GW=
 export DNS="dns0 dns1..."
 
 #If IP is set then network will be configured via ipconfig, else via ip
-export IP=${ADDR%/*}::$GW:$NETMASK::$DEV
+#IP can be "dhcp,done...". see configure_network
+export IP=${ADDR%/*}::$GW:$NETMASK::$DEVICE

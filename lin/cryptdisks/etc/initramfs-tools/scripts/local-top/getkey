@@ -18,7 +18,7 @@ esac
 
 . /scripts/functions
 
-get_key()
+get_key_from_fs()
 {
     mpoint="/flash"
     mkdir -p $mpoint
@@ -40,7 +40,11 @@ get_key()
             return 0
         fi;
     done;
+    return 1
+}
 
+get_key_from_net()
+{
     configure_networking
     wait_for_udev 10
     if [ ! -s "$KEYFILE" ]; then
@@ -49,8 +53,14 @@ get_key()
     if [ -s "$KEYFILE" ]; then
 	return 0
     fi;
-
     return 1;
+}
+
+get_key()
+{
+    get_key_from_fs && return 0
+    get_key_from_net && return 0
+    return 1
 }
 
 main()

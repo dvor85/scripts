@@ -32,7 +32,7 @@ if [ ! -f $id_rsa ]; then
     ssh_user=`echo $USERSERV | sed -r 's/([^@]+)(.*)/\1/'`
     ssh_serv=`echo $USERSERV | sed -r 's/[^@]+@(.*)/\1/'`
     echo "Try to add ${id_rsa}.pub to authorized_keys at the $USERSERV"
-    cat "${id_rsa}.pub" | ssh -o ConnectTimeout=10 root@$ssh_serv "mkdir -p ~$ssh_user/.ssh/; cat - >> ~$ssh_user/.ssh/authorized_keys; chown -R $ssh_user ~$ssh_user/.ssh/; chmod 600 ~$ssh_user/.ssh/authorized_keys"
+    cat "${id_rsa}.pub" | ssh -o ConnectTimeout=10 $USERSERV "mkdir -p ~$ssh_user/.ssh/; cat - >> ~$ssh_user/.ssh/authorized_keys; chown -R $ssh_user ~$ssh_user/.ssh/; chmod 600 ~$ssh_user/.ssh/authorized_keys"
     [ ! $? -eq 0 ] && echo "FAILED!" 
     echo "Try to add $KEYFILE to $USERSERV"
     cat $KEYFILE | ssh -o ConnectTimeout=10 -i $id_rsa $USERSERV "cat - > ~/$MYKEY; chmod 400 ~/$MYKEY"
