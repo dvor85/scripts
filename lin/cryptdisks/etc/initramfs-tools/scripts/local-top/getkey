@@ -43,9 +43,24 @@ get_key_from_fs()
     return 1
 }
 
+set_dns()
+{
+    resolv_conf=/etc/resolv.conf
+    rm -f $resolv_conf
+    for ns in $DNS; do
+	echo "nameserver $ns" >> $resolv_conf
+    done;
+    if [ -n "$IPV4DNS0" ]; then
+	[ "$IPv4DNS0" != "0.0.0.0" ] && echo "nameserver $IPV4DNS0" >> $resolv_conf
+    fi
+    if [ -n "$IPV4DNS1" ]; then
+	[ "$IPv4DNS1" != "0.0.0.0" ] && echo "nameserver $IPV4DNS1" >> $resolv_conf
+    fi
+}
+
 get_key_from_net()
 {
-    configure_networking
+    configure_networking && set_dns
     wait_for_udev 10
     if [ ! -s "$KEYFILE" ]; then
         /sbin/ssh -q -o StrictHostKeyChecking=no -o ConnectTimeout=10 $USERSERV "cat ~/$MYKEY" > "$KEYFILE"
