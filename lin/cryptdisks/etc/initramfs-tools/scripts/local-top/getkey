@@ -43,24 +43,80 @@ get_key_from_fs()
     return 1
 }
 
-set_dns()
+get_device()
+{
+    if [ -n "${BOOTIF}" ]; then
+            # pxelinux sets BOOTIF to a value based on the mac address of the
+            # network card used to PXE boot, so use this value for DEVICE rather
+            # than a hard-coded device name from initramfs.conf. this facilitates
+            # network booting when machines may have multiple network cards.
+            # pxelinux sets BOOTIF to 01-$mac_address
+            # strip off the leading "01-", which isn't part of the mac
+            # address
+            temp_mac=${BOOTIF#*-}
+            # convert to typical mac address format by replacing "-" with ":"
+            bootif_mac=""
+            IFS='-'
+            for x in $temp_mac ; do
+                    if [ -z "$bootif_mac" ]; then
+                            bootif_mac="$x"
+                    else
+                            bootif_mac="$bootif_mac:$x"
+                    fi
+            done
+            unset IFS
+            # look for devices with matching mac address, and set DEVICE to
+            # appropriate value if match is found.
+            for device in /sys/class/net/* ; do
+                    if [ -f "$device/address" ]; then
+                            current_mac=$(cat "$device/address")
+                            if [ "$bootif_mac" = "$current_mac" ]; then
+                                    DEVICE=${device##*/}
+                                    break
+                            fi
+                    fi
+            done
+    fi
+}
+
+
+update_ip()
+{
+    temp_ip=""
+    i=0
+    IFS=':'
+    for p in $IP; do
+	i=$(($i+1))
+	if [ $i -eq 6 -a -z "$p" ]; then
+	    get_device
+	    p=$DEVICE
+	fi
+	if [ -z "$temp_ip" ]; then
+    	    temp_ip="$p"
+    	else
+    	    temp_ip="$temp_ip:$p"
+    	fi
+    done;
+    IP=$temp_ip
+    unset IFS
+}
+
+update_dns()
 {
     resolv_conf=/etc/resolv.conf
     rm -f $resolv_conf
-    for ns in $DNS; do
-	echo "nameserver $ns" >> $resolv_conf
+    for ns in $DNS $IPV4DNS0 $IPV4DNS1; do
+	if [ -n "$ns" -a "$ns" != "0.0.0.0" ]; then
+	    echo "nameserver $ns" >> $resolv_conf
+	fi
     done;
-    if [ -n "$IPV4DNS0" ]; then
-	[ "$IPv4DNS0" != "0.0.0.0" ] && echo "nameserver $IPV4DNS0" >> $resolv_conf
-    fi
-    if [ -n "$IPV4DNS1" ]; then
-	[ "$IPv4DNS1" != "0.0.0.0" ] && echo "nameserver $IPV4DNS1" >> $resolv_conf
-    fi
 }
 
 get_key_from_net()
 {
-    configure_networking && set_dns
+    update_ip
+    configure_networking
+    update_dns
     wait_for_udev 10
     if [ ! -s "$KEYFILE" ]; then
         /sbin/ssh -q -o StrictHostKeyChecking=no -o ConnectTimeout=10 $USERSERV "cat ~/$MYKEY" > "$KEYFILE"
