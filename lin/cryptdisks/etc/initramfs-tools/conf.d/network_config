@@ -4,6 +4,7 @@ export BOOTIF=01-08-00-27-98-2d-7c
 #export NETMASK=255.255.255.0
 #export GW=0.0.0.0
 #export DNS="dns0 dns1..."
+#export SEARCH="example.com ..."
 
 #export IP=<client-ip>:<server-ip>:<gw-ip>:<netmask>:<hostname>:<device>:<autoconf>
 ###for static ip assign

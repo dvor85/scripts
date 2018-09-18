@@ -20,7 +20,7 @@ esac
 
 get_key_from_fs()
 {
-    mpoint="/flash"
+    local mpoint="/flash"
     mkdir -p $mpoint
 
     wait_for_udev 10
@@ -82,8 +82,7 @@ get_device()
 
 update_ip()
 {
-    temp_ip=""
-    i=0
+    local temp_ip="" i=0
     IFS=':'
     for p in $IP; do
 	i=$(($i+1))
@@ -101,22 +100,52 @@ update_ip()
     unset IFS
 }
 
-update_dns()
+update_resolv_conf()
 {
-    resolv_conf=/etc/resolv.conf
-    rm -f $resolv_conf
-    for ns in $DNS $IPV4DNS0 $IPV4DNS1; do
-	if [ -n "$ns" -a "$ns" != "0.0.0.0" ]; then
-	    echo "nameserver $ns" >> $resolv_conf
-	fi
+    local resolv_conf=/etc/resolv.conf
+    local n="" ns="" search=""
+
+    for n in $DNS $IPV4DNS0 $IPV4DNS1; do
+	[ -n "$n" -a "$n" != "0.0.0.0" ] || continue
+        # skip if 'n' already in list.
+	case " ${ns} " in
+            *\ $n\ *) continue;;
+        esac
+        ns="${ns} ${n}"
     done;
+    for n in "$SEARCH" "${DOMAINSEARCH}"; do
+        [ -n "$n" ] || continue
+        # skip if already in search.
+        case " ${search}" in
+            *\ $n\ *) continue;;
+        esac
+        search="$search $n"
+    done;
+    search=${search# }
+    ns=${ns# }
+    local rconf="" CR="
+"
+    for n in ${ns}; do
+        rconf="${rconf}nameserver $n${CR}"
+    done
+    if [ -n "${search}" ]; then
+        rconf="${rconf}search ${search}${CR}"
+    fi
+    if [ -z "$rconf" ]; then
+        echo "no search or nameservers found" 1>&2
+    fi
+    if [ "$rconf" = "-" ]; then
+        echo -n "$rconf"
+    else
+        echo -n "$rconf" > "$resolv_conf"
+    fi
 }
 
 get_key_from_net()
 {
     update_ip
     configure_networking
-    update_dns
+    update_resolv_conf
     wait_for_udev 10
     if [ ! -s "$KEYFILE" ]; then
         /sbin/ssh -q -o StrictHostKeyChecking=no -o ConnectTimeout=10 $USERSERV "cat ~/$MYKEY" > "$KEYFILE"
