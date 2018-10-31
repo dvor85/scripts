@@ -1,7 +1,21 @@
 #!/bin/bash
 
-BD=/mnt/backup/luksHeaderBackup
-mkdir -p $BD 
-for d in /dev/disk/by-id/scsi*; do 
-    cryptsetup luksHeaderBackup -v $d --header-backup-file $BD/${d#/dev/disk/by-id/}.header; 
+usage() 
+{
+    echo "$(basename "$0") <backup dir>"
+}
+
+[[ -z "$1" ]] && usage && exit 1
+
+BD="$1"
+PASSED=""
+
+mkdir -p $BD
+for d in /dev/disk/by-id/*; do 
+    disk="$(readlink -f $d)"
+    if [[ -z $(echo -e "$PASSED" | sed -n "\#$disk#p") ]]; then
+        curr_h=$BD/${d#/dev/disk/by-id/}.header
+	cryptsetup luksHeaderBackup -v $d --header-backup-file "$curr_h" &>/dev/null
+    fi
+    PASSED="$PASSED\n$disk"
 done
