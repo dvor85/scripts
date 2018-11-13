@@ -1,7 +1,7 @@
 #!/bin/sh
 
 PREREQ="udev"
-EXCEPT_DEVLIST=$(/sbin/blkid -o device -t TYPE=crypto_LUKS)
+EXCEPT_DEVLIST=$(/sbin/blkid -o device -t TYPE=crypto_LUKS | tr '\n' ' ')
 
 prereqs()
 {
@@ -25,20 +25,20 @@ get_key_from_fs()
 
     wait_for_udev 10
     for dev in $(/sbin/blkid -o device); do
-        if [ -z "$(echo -e "$EXCEPT_DEVLIST" | sed -n "\#^$dev\$#p")" ]; then
-            EXCEPT_DEVLIST="$EXCEPT_DEVLIST\n$dev"
-
-            FSTYPE=$(/sbin/blkid -o value -s TYPE $dev);
-            if mount -o ro -t $FSTYPE $dev $mpoint >/dev/null 2>&1; then
-                if [ -s "$mpoint/$MYKEY" ]; then
-                    cat "$mpoint/$MYKEY" > "$KEYFILE"
-                fi
-                umount $dev >/dev/null 2>&1
-            fi;
+	#skip if dev already in EXCEPT_DEVLIST
+	case " $EXCEPT_DEVLIST " in
+	    *\ $dev\ *) continue;
+	esac
+        FSTYPE=$(get_fstype $dev);
+        if mount -o ro -t $FSTYPE $dev $mpoint > /dev/null 2>&1; then
+            if [ -s "$mpoint/$MYKEY" ]; then
+                cat "$mpoint/$MYKEY" > "$KEYFILE"
+            fi
+            umount $dev >/dev/null 2>&1
+	else
+	    EXCEPT_DEVLIST="$EXCEPT_DEVLIST $dev"
         fi;
-        if [ -s "$KEYFILE" ]; then
-            return 0
-        fi;
+        [ -s "$KEYFILE" ] && return 0
     done;
     return 1
 }
@@ -55,16 +55,7 @@ get_device()
             # address
             temp_mac=${BOOTIF#*-}
             # convert to typical mac address format by replacing "-" with ":"
-            bootif_mac=""
-            IFS='-'
-            for x in $temp_mac ; do
-                    if [ -z "$bootif_mac" ]; then
-                            bootif_mac="$x"
-                    else
-                            bootif_mac="$bootif_mac:$x"
-                    fi
-            done
-            unset IFS
+            bootif_mac=$(echo "$temp_mac" | tr '-' ':')
             # look for devices with matching mac address, and set DEVICE to
             # appropriate value if match is found.
             for device in /sys/class/net/* ; do
@@ -72,6 +63,7 @@ get_device()
                             current_mac=$(cat "$device/address")
                             if [ "$bootif_mac" = "$current_mac" ]; then
                                     DEVICE=${device##*/}
+				    DEVICE6=${device##*/}
                                     break
                             fi
                     fi
@@ -80,70 +72,62 @@ get_device()
 }
 
 
-update_ip()
+update_ip_param()
 {
-    local temp_ip="" i=0
-    IFS=':'
-    for p in $IP; do
-	i=$(($i+1))
-	if [ $i -eq 6 -a -z "$p" ]; then
-	    get_device
-	    p=$DEVICE
-	fi
-	if [ -z "$temp_ip" ]; then
-    	    temp_ip="$p"
-    	else
-    	    temp_ip="$temp_ip:$p"
-    	fi
-    done;
-    IP=$temp_ip
-    unset IFS
+    get_device
+    IP=$(echo $IP | sed "s/[^:]*:/$DEVICE:/6")
 }
 
 update_resolv_conf()
 {
     local resolv_conf=/etc/resolv.conf
     local n="" ns="" search=""
+    local rconf="" CR="\n"
 
-    for n in $DNS $IPV4DNS0 $IPV4DNS1; do
+    rconf=$(cat $resolv_conf 2>/dev/null)
+    ns="$(echo -e "$rconf" | sed -nr 's/nameserver[[:space:]]+(.+)/\1/p' | tr '\n' ' ')"
+    for n in $DNS "${IPV4DNS0}" "${IPV4DNS1}" "${IPV6DNS0}" "${IPV6DNS1}"; do
 	[ -n "$n" -a "$n" != "0.0.0.0" ] || continue
         # skip if 'n' already in list.
-	case " ${ns} " in
-            *\ $n\ *) continue;;
-        esac
+	case " $ns " in
+	    *\ $n\ *) continue;
+	esac
         ns="${ns} ${n}"
     done;
-    for n in "$SEARCH" "${DOMAINSEARCH}"; do
+
+    search="$(echo -e "$rconf" | sed -nr 's/search[[:space:]]+(.+)/\1/p' | tr '\n*' ' ')"
+    for n in $SEARCH ${DOMAINSEARCH} ${IPV6DOMAINSEARCH}; do
         [ -n "$n" ] || continue
-        # skip if already in search.
-        case " ${search}" in
-            *\ $n\ *) continue;;
-        esac
+        # skip if 'n' already in search.
+	case " $search " in
+	    *\ $n\ *) continue;
+	esac
         search="$search $n"
     done;
     search=${search# }
     ns=${ns# }
-    local rconf="" CR="
-"
+    rconf=""
     for n in ${ns}; do
-        rconf="${rconf}nameserver $n${CR}"
+	rconf="${rconf}nameserver $n${CR}"
     done
+    
     if [ -n "${search}" ]; then
-        rconf="${rconf}search ${search}${CR}"
+	rconf="${rconf}search ${search}${CR}"
     fi
     if [ -z "$rconf" ]; then
         echo "no search or nameservers found" 1>&2
     fi
     if [ "$rconf" = "-" ]; then
-        echo -n "$rconf"
+        echo -e "$rconf"
     else
-        echo -n "$rconf" > "$resolv_conf"
+        echo -e "$rconf" > "$resolv_conf"
     fi
 }
 
 get_key_from_net()
 {
-    update_ip
+    [ -z "$IP" ] && return 1
+    update_ip_param
     configure_networking
     update_resolv_conf
     wait_for_udev 10

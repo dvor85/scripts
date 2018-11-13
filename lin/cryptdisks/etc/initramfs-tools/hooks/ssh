@@ -16,6 +16,11 @@ esac
 . "${CONFDIR}/initramfs.conf"
 . /usr/share/initramfs-tools/hook-functions
 
+if [ -z "$IP" ]; then
+    echo "WARNING: Network is not configured, skipped"
+    exit 0
+fi
+
 copy_exec /usr/bin/ssh /sbin
 LIBC_DIR=`ldd /usr/bin/ssh | sed -n -e 's,.* => \(/lib.*\)/libc\.so\..*,\1,p'`
 for so in $(find "${LIBC_DIR}" -name 'libnss_compat*' -or -name 'libnss_files*' -or -name 'libnss_dns*'); do
