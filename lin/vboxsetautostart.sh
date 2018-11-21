@@ -33,11 +33,11 @@ if [[ ! -f $VBOXAUTOSTART_CONFIG ]]; then
     echo "default_policy=allow" > $VBOXAUTOSTART_CONFIG
 fi
 
-sudo -u $VBOXWEB_USER VBoxManage setproperty autostartdbpath $VBOXAUTOSTART_DB
-sudo -u $VBOXWEB_USER VBoxManage modifyvm $MACHINENAME --autostart-enabled $ACTION
-sudo -u $VBOXWEB_USER VBoxManage modifyvm $MACHINENAME --autostop-type savestate
+sudo -H -u $VBOXWEB_USER VBoxManage setproperty autostartdbpath $VBOXAUTOSTART_DB
+sudo -H -u $VBOXWEB_USER VBoxManage modifyvm $MACHINENAME --autostart-enabled $ACTION
+sudo -H -u $VBOXWEB_USER VBoxManage modifyvm $MACHINENAME --autostop-type savestate
 
-sudo -u $VBOXWEB_USER touch $VBOXAUTOSTART_DB/$VBOXWEB_USER.start
-sudo -u $VBOXWEB_USER touch $VBOXAUTOSTART_DB/$VBOXWEB_USER.stop
+sudo -H -u $VBOXWEB_USER touch $VBOXAUTOSTART_DB/$VBOXWEB_USER.start
+sudo -H -u $VBOXWEB_USER touch $VBOXAUTOSTART_DB/$VBOXWEB_USER.stop
 
 chmod 600 $VBOXAUTOSTART_DB/$VBOXWEB_USER.*
